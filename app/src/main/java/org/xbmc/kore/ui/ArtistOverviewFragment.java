@@ -184,6 +184,11 @@ public class ArtistOverviewFragment extends AbstractDetailsFragment
     }
 
     @Override
+    protected void onStream() {
+        //@TODO implement functionality
+    }
+
+    @Override
     public void onActivityCreated (Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         setHasOptionsMenu(false);

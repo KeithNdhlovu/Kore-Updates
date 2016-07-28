@@ -296,6 +296,7 @@
 
     <string name="no_files_to_download">No files to download.</string>
     <string name="error_getting_file_information">Couldn\'t get information to download file %1$s.</string>
+    <string name="error_getting_file_stream_information">Couldn\'t get information to stream file %1$s.</string>
 
     <string name="author">Author:</string>
     <string name="version">Version:</string>
@@ -385,5 +386,6 @@
 
     <string name="read_phone_state_permission_denied">Permission denied. Won\'t be able to pause playback during calls.</string>
     <string name="write_storage_permission_denied">Permission denied. Won\'t be able to download files.</string>
+    <string name="no_files_to_stream">No files to stream</string>
 
 </resources>

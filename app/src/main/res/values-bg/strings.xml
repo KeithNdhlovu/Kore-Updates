@@ -351,5 +351,6 @@
     <string name="recordings">Записи</string>
     <string name="tv_channels">ТВ канали</string>
     <string name="radio_channels">Радио канали</string>
+    <string name="no_files_to_stream">No files to stream</string>
 
 </resources>

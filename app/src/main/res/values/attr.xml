@@ -101,6 +101,8 @@
 
     <attr name="iconDownload" format="reference" />
 
+    <attr name="iconStream" format="reference" />
+
     <attr name="iconChevronLeft" format="reference" />
     <attr name="iconChevronRight" format="reference" />
 

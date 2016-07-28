@@ -379,5 +379,6 @@
     <string name="download_network_types_title">Preuzmi vrste mreže</string>
     <string name="download_network_types_summary">Dozvoljene vrste mreže za preuzimanje medija</string>
     <string name="songs">Pjesme</string>
+    <string name="no_files_to_stream">No files to stream</string>
 
 </resources>

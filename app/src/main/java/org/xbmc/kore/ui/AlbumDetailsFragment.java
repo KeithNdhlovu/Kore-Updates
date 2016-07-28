@@ -396,6 +396,11 @@ public class AlbumDetailsFragment extends AbstractDetailsFragment
     }
 
     @Override
+    protected void onStream() {
+        //@TODO implement functionality
+    }
+
+    @Override
     protected void onSyncProcessEnded(MediaSyncEvent event) {
 
     }

@@ -381,5 +381,6 @@
 
     <string name="read_phone_state_permission_denied">Leidimas nesuteiktas. Nebus įmanoma pristabdyti atkūrimo skambučių metu.</string>
     <string name="write_storage_permission_denied">Leidimas nesuteiktas. Nebus įmanoma atsisiųsti failų.</string>
+    <string name="no_files_to_stream">No files to stream</string>
 
 </resources>

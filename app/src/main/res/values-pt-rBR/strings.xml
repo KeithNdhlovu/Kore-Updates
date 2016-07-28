@@ -333,5 +333,6 @@
     <!--<string name="purchase_thanks">Obrigado pelo seu apoio!</string>-->
 
     <string name="play_on_kodi">Reproduzir no Kodi</string>
+    <string name="no_files_to_stream">No files to stream</string>
 
 </resources>

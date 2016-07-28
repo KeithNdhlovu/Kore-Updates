@@ -406,6 +406,11 @@ public class MusicVideoDetailsFragment extends AbstractDetailsFragment
         }
     }
 
+    @Override
+    protected void onStream() {
+        //@TODO implement functionality
+    }
+
     /**
      * Display the video details
      *

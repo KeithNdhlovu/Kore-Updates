@@ -321,5 +321,6 @@
     <!--<string name="purchase_thanks">Thanks for your support!</string>-->
 
     <string name="play_on_kodi">Erreproduzitu Kodi-n</string>
+    <string name="no_files_to_stream">No files to stream</string>
 
 </resources>

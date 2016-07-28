@@ -365,5 +365,6 @@
 
     <string name="record">Nagraj</string>
     <string name="pvr_epg">Przewodnik</string>
+    <string name="no_files_to_stream">No files to stream</string>
 
 </resources>

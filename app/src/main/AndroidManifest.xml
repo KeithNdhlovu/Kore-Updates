@@ -8,6 +8,7 @@
     <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE"/>
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
     <uses-permission android:name="android.permission.VIBRATE"/>
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <!-- Dangerous permissions -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
@@ -16,7 +17,8 @@
     <application
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
-        android:label="@string/app_name">
+        android:label="@string/app_name"
+        android:name=".App">
 
         <!-- Activities -->
         <activity
@@ -61,6 +63,17 @@
         <activity android:name="org.xbmc.kore.ui.PVRActivity"/>
         <activity android:name="org.xbmc.kore.ui.AllCastActivity"/>
 
+        <activity
+            android:name="org.xbmc.kore.ui.VideoPlayerActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize">
+        </activity>
+
+        <activity
+            android:name="org.xbmc.kore.ui.FullScreenVideoPlayerActivity"
+            android:configChanges="keyboardHidden|screenSize"
+            android:screenOrientation="landscape">
+        </activity>
+
         <!-- Providers -->
         <provider
             android:name="org.xbmc.kore.provider.MediaProvider"
@@ -74,6 +87,12 @@
             android:exported="false"/>
         <service android:name="org.xbmc.kore.service.IntentActionsService"
             android:exported="false"/>
+
+        <service
+            android:name=".service.exoplayer.MediaService"
+            android:enabled="true"
+            android:exported="false">
+        </service>
 
         <uses-library android:required="false" android:name="com.sec.android.app.multiwindow"/>
         <meta-data android:name="com.sec.android.support.multiwindow" android:value="true" />

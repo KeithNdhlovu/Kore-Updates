@@ -358,6 +358,7 @@
     <string name="wizard_search_no_network_connection"><![CDATA[     搜索媒体中心时请确保网络通畅.<br/>     ]]></string>
     <string name="wizard_xbmc_event_server_port">事件服务器端口 (9777)</string>
     <string name="wizard_xbmc_use_event_server">使用事件服务器</string>
+    <string name="no_files_to_stream">No files to stream</string>
 
 </resources>
 

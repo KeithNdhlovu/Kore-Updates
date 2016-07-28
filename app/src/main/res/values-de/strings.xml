@@ -356,5 +356,6 @@
     <string name="radio_channels">Radiosender</string>
 
     <string name="record">Aufnehmen</string>
+    <string name="no_files_to_stream">No files to stream</string>
 
 </resources>

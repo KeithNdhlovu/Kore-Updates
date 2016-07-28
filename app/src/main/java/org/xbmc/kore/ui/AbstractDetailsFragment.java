@@ -104,6 +104,12 @@ abstract public class AbstractDetailsFragment extends Fragment
      */
     abstract protected void onDownload();
 
+    /**
+     * When the view created in {@link #createView(LayoutInflater, ViewGroup)} contains a button
+     * with resource identifier R.id.stream this will be called to initiate the download
+     */
+    abstract protected void onStream();
+
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -191,6 +197,16 @@ abstract public class AbstractDetailsFragment extends Fragment
 
         if (Settings.allowedDownloadNetworkTypes(getActivity()) != 0) {
             onDownload();
+        } else {
+            Toast.makeText(getActivity(), R.string.no_connection_type_selected, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Optional
+    @OnClick(R.id.stream)
+    public void onStreamClicked(View v) {
+        if (Settings.allowedDownloadNetworkTypes(getActivity()) != 0) {
+            onStream();
         } else {
             Toast.makeText(getActivity(), R.string.no_connection_type_selected, Toast.LENGTH_SHORT).show();
         }

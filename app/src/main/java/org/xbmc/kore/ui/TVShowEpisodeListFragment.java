@@ -142,6 +142,11 @@ public class TVShowEpisodeListFragment extends AbstractDetailsFragment
     }
 
     @Override
+    protected void onStream() {
+        //@TODO implement functionality
+    }
+
+    @Override
     public void onActivityCreated (Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
 

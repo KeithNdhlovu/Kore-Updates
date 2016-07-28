@@ -375,5 +375,6 @@
 
     <string name="single_column">Une colonne</string>
     <string name="multi_column">Plusieurs colonnes</string>
+    <string name="no_files_to_stream">No files to stream</string>
 
 </resources>

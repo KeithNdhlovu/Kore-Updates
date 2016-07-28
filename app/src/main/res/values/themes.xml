@@ -134,6 +134,8 @@
 
         <item name="iconDownload">@drawable/ic_get_app_white_24dp</item>
 
+        <item name="iconStream">@drawable/ic_cast_white_24dp</item>
+
         <item name="iconChevronLeft">@drawable/ic_chevron_left_white_24dp</item>
         <item name="iconChevronRight">@drawable/ic_chevron_right_white_24dp</item>
 

@@ -426,6 +426,11 @@ public class TVShowEpisodeDetailsFragment extends AbstractDetailsFragment
         }
     }
 
+    @Override
+    protected void onStream() {
+        //@TODO implement functionality
+    }
+
     /**
      * Display the episode details
      *

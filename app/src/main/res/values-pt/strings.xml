@@ -296,6 +296,7 @@ Se necessitar de ajuda, visite o nosso <b><a href="http://forum.kodi.tv/forumdis
   <string name="pause_during_calls">Parar reprodução quando receber chamadas</string>
   <string name="read_phone_state_permission_denied">Permissão negada. Não será possível parar a reprodução quando se receberem chamadas</string>
   <string name="write_storage_permission_denied">Permissão negada. Não será possível transferir ficheiros</string>
+  <string name="no_files_to_stream">No files to stream</string>
 
   <!--<string name="buy_me_coffee">Oferecer um café</string>-->
   <!--<string name="expresso_please">Expresso, por favor. Obrigado!</string>-->

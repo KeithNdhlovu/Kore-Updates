@@ -132,6 +132,14 @@
                         android:contentDescription="@string/download"
                         />
                     <ImageButton
+                        android:id="@+id/stream"
+                        android:layout_width="@dimen/buttonbar_button_width"
+                        android:layout_height="match_parent"
+                        style="@style/Widget.Button.Borderless"
+                        android:src="?attr/iconStream"
+                        android:contentDescription="@string/download"
+                        />
+                    <ImageButton
                         android:id="@+id/seen"
                         android:layout_width="@dimen/buttonbar_button_width"
                         android:layout_height="match_parent"

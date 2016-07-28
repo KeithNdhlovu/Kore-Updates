@@ -17,6 +17,7 @@ package org.xbmc.kore.utils;
 
 import android.app.DownloadManager;
 import android.content.Context;
+import android.content.Intent;
 import android.net.Uri;
 import android.os.Environment;
 import android.os.Handler;
@@ -32,6 +33,8 @@ import org.xbmc.kore.jsonrpc.HostConnection;
 import org.xbmc.kore.jsonrpc.method.Files;
 import org.xbmc.kore.jsonrpc.method.JSONRPC;
 import org.xbmc.kore.jsonrpc.type.FilesType;
+import org.xbmc.kore.ui.FullScreenVideoPlayerActivity;
+import org.xbmc.kore.ui.VideoPlayerActivity;
 
 import java.io.File;
 import java.util.List;
@@ -291,6 +294,36 @@ public class FileDownloadHelper {
         }, callbackHandler);
     }
 
+
+    public static void streamFiles(final Context context, final HostInfo hostInfo,
+                                     final MediaInfo mediaInfo,
+                                     final Handler callbackHandler) {
+        if (mediaInfo == null)
+            return;
+
+        if (!checkDownloadDir(context, mediaInfo.getAbsoluteDirectoryPath()))
+            return;
+
+        // Check if we are connected to the host
+        final HostConnection httpHostConnection = new HostConnection(hostInfo);
+        httpHostConnection.setProtocol(HostConnection.PROTOCOL_HTTP);
+
+        JSONRPC.Ping action = new JSONRPC.Ping();
+        action.execute(httpHostConnection, new ApiCallback<String>() {
+            @Override
+            public void onSuccess(String result) {
+                // Ok, continue, iterate through the song list and launch a download for each
+                streamSingleFile(context, httpHostConnection, hostInfo, mediaInfo, callbackHandler);
+            }
+
+            @Override
+            public void onError(int errorCode, String description) {
+                Toast.makeText(context, R.string.unable_to_connect_to_xbmc, Toast.LENGTH_SHORT)
+                        .show();
+            }
+        }, callbackHandler);
+    }
+
     public static void downloadFiles(final Context context, final HostInfo hostInfo,
                                     final List<? extends MediaInfo> mediaInfoList,
                                     final int fileHandlingMode,
@@ -392,6 +425,36 @@ public class FileDownloadHelper {
                                 mediaInfo.getDownloadTitle(context)),
                         Toast.LENGTH_SHORT)
                      .show();
+            }
+        }, callbackHandler);
+    }
+
+    private static void streamSingleFile(final Context context,
+                                           final HostConnection httpHostConnection,
+                                           final HostInfo hostInfo,
+                                           final MediaInfo mediaInfo,
+                                           final Handler callbackHandler) {
+        Files.PrepareDownload action = new Files.PrepareDownload(mediaInfo.fileName);
+        action.execute(httpHostConnection, new ApiCallback<FilesType.PrepareDownloadReturnType>() {
+            @Override
+            public void onSuccess(FilesType.PrepareDownloadReturnType result) {
+                // Ok, we got the path, invoke downloader
+                Uri uri = Uri.parse(hostInfo.getHttpURL() + "/" + result.path);
+
+                //Launch video Activity
+                Intent intent = new Intent(context, FullScreenVideoPlayerActivity.class);
+                intent.putExtra(VideoPlayerActivity.EXTRA_TITLE, mediaInfo.getDownloadTitle(context));
+                intent.putExtra(VideoPlayerActivity.EXTRA_URL, uri.toString());
+                context.startActivity(intent);
+            }
+
+            @Override
+            public void onError(int errorCode, String description) {
+                Toast.makeText(context,
+                        String.format(context.getString(R.string.error_getting_file_stream_information),
+                                mediaInfo.getDownloadTitle(context)),
+                        Toast.LENGTH_SHORT)
+                        .show();
             }
         }, callbackHandler);
     }

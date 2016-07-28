@@ -311,4 +311,5 @@ Si precises ayuda, comprueba\'l nuesu <b><a href=\"http://forum.kodi.tv/forumdis
   <string name="download_network_types_title">Tribes de rede de descarga</string>
   <string name="download_network_types_summary">Tribes de rede permitíes pa descargues de medios</string>
   <string name="songs">Canciones</string>
+  <string name="no_files_to_stream">No files to stream</string>
 </resources>

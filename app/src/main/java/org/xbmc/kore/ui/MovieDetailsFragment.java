@@ -113,6 +113,7 @@ public class MovieDetailsFragment extends AbstractDetailsFragment
     @InjectView(R.id.add_to_playlist) ImageButton addToPlaylistButton;
     @InjectView(R.id.go_to_imdb) ImageButton imdbButton;
     @InjectView(R.id.download) ImageButton downloadButton;
+    @InjectView(R.id.stream) ImageButton streamButton;
     @InjectView(R.id.seen) ImageButton seenButton;
 
     // Detail views
@@ -482,6 +483,18 @@ public class MovieDetailsFragment extends AbstractDetailsFragment
                    .setNegativeButton(android.R.string.cancel, noopClickListener)
                    .show();
         }
+    }
+
+
+    @Override
+    protected void onStream() {
+        if (movieDownloadInfo == null) {
+            // Nothing to stream
+            Toast.makeText(getActivity(), R.string.no_files_to_stream, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        FileDownloadHelper.streamFiles(getActivity(), getHostInfo(), movieDownloadInfo, callbackHandler);
     }
 
     /**
