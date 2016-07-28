@@ -18,6 +18,7 @@ package org.xbmc.kore.ui;
 import android.annotation.TargetApi;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.database.Cursor;
@@ -46,6 +47,8 @@ import android.widget.Toast;
 import com.melnykov.fab.FloatingActionButton;
 import com.melnykov.fab.ObservableScrollView;
 
+import org.videolan.libvlc.LibVLC;
+import org.videolan.libvlc.LibVlcException;
 import org.xbmc.kore.R;
 import org.xbmc.kore.Settings;
 import org.xbmc.kore.jsonrpc.ApiCallback;
@@ -73,7 +76,7 @@ import butterknife.OnClick;
  * Presents movie details
  */
 public class MovieDetailsFragment extends AbstractDetailsFragment
-        implements LoaderManager.LoaderCallbacks<Cursor> {
+        implements LoaderManager.LoaderCallbacks<Cursor>, FileDownloadHelper.FileDownloadHelperCallbacks {
     private static final String TAG = LogUtils.makeLogTag(MovieDetailsFragment.class);
 
     public static final String BUNDLE_KEY_MOVIETITLE = "movie_title";
@@ -92,10 +95,13 @@ public class MovieDetailsFragment extends AbstractDetailsFragment
      * Handler on which to post RPC callbacks
      */
     private Handler callbackHandler = new Handler();
+    private FileDownloadHelper.FileDownloadHelperCallbacks fileDownloadHelperCallbacks;
 
     // Displayed movie id
     private int movieId = -1;
     private String movieTitle;
+    private String movieTagline;
+    private String movieFanArt;
 
     private ArrayList<VideoType.Cast> castArrayList;
 
@@ -104,6 +110,9 @@ public class MovieDetailsFragment extends AbstractDetailsFragment
 
     // Controls whether a automatic sync refresh has been issued for this show
     private static boolean hasIssuedOutdatedRefresh = false;
+
+    //vlc
+    private LibVLC mLibVLC;
 
     @InjectView(R.id.swipe_refresh_layout) SwipeRefreshLayout swipeRefreshLayout;
 
@@ -167,6 +176,17 @@ public class MovieDetailsFragment extends AbstractDetailsFragment
         if (movieId == -1) {
             // There's nothing to show
             return null;
+        }
+
+        // Initialize the LibVLC multimedia framework.
+        // This is required before doing anything with LibVLC.
+        try {
+            mLibVLC = LibVLC.getInstance();
+            mLibVLC.init(getActivity());
+        } catch(LibVlcException e) {
+            Toast.makeText(getActivity(),
+                    "Error initializing the libVLC multimedia framework!",
+                    Toast.LENGTH_LONG).show();
         }
 
         ViewGroup root = (ViewGroup) inflater.inflate(R.layout.fragment_movie_details, container, false);
@@ -494,7 +514,7 @@ public class MovieDetailsFragment extends AbstractDetailsFragment
             return;
         }
 
-        FileDownloadHelper.streamFiles(getActivity(), getHostInfo(), movieDownloadInfo, callbackHandler);
+        FileDownloadHelper.streamFiles(getActivity(), getHostInfo(), movieDownloadInfo, callbackHandler, this);
     }
 
     /**
@@ -506,6 +526,9 @@ public class MovieDetailsFragment extends AbstractDetailsFragment
         LogUtils.LOGD(TAG, "Refreshing movie details");
         cursor.moveToFirst();
         movieTitle = cursor.getString(MovieDetailsQuery.TITLE);
+        movieTagline = cursor.getString(MovieDetailsQuery.TAGLINE);
+        movieFanArt = cursor.getString(MovieDetailsQuery.FANART);
+
         mediaTitle.setText(movieTitle);
         mediaUndertitle.setText(cursor.getString(MovieDetailsQuery.TAGLINE));
 
@@ -651,6 +674,20 @@ public class MovieDetailsFragment extends AbstractDetailsFragment
         }
 
         return null;
+    }
+
+    @Override
+    public void onStreamUrlFound(String mediaUrl) {
+        Intent intent = new Intent(getActivity(), FullScreenVideoPlayerActivity.class);
+        intent.putExtra(VideoPlayerActivity.EXTRA_TITLE, movieTitle);
+        intent.putExtra(VideoPlayerActivity.EXTRA_TAG_LINE, movieTagline);
+        intent.putExtra(VideoPlayerActivity.EXTRA_FAN_ART, movieFanArt);
+        intent.putExtra(VideoPlayerActivity.EXTRA_URL, mediaUrl);
+        startActivity(intent);
+
+        //Intent intent = new Intent(getActivity(), VlcVideoActivity.class);
+        //intent.putExtra(VideoPlayerActivity.EXTRA_URL, mediaUrl);
+        //startActivity(intent);
     }
 
     /**

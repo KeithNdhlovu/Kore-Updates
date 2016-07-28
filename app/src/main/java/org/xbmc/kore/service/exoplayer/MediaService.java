@@ -23,6 +23,7 @@ import org.xbmc.kore.playlist.PlaylistManager;
 import org.xbmc.kore.playlist.VideoApi;
 import org.xbmc.kore.ui.FullScreenVideoPlayerActivity;
 import org.xbmc.kore.ui.RemoteActivity;
+import org.xbmc.kore.ui.VideoPlayerActivity;
 import org.xbmc.kore.utils.data.MediaItem;
 
 /**

@@ -17,6 +17,7 @@ package org.xbmc.kore.ui;
 
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.database.Cursor;
@@ -68,7 +69,7 @@ import butterknife.OnClick;
  * Presents movie details
  */
 public class TVShowEpisodeDetailsFragment extends AbstractDetailsFragment
-        implements LoaderManager.LoaderCallbacks<Cursor> {
+        implements LoaderManager.LoaderCallbacks<Cursor>, FileDownloadHelper.FileDownloadHelperCallbacks {
     private static final String TAG = LogUtils.makeLogTag(TVShowEpisodeDetailsFragment.class);
 
     public static final String TVSHOWID = "tvshow_id";
@@ -87,6 +88,8 @@ public class TVShowEpisodeDetailsFragment extends AbstractDetailsFragment
     private int tvshowId = -1;
     private int episodeId = -1;
 
+    private String fanArt;
+
     // Info for downloading the episode
     private FileDownloadHelper.TVShowInfo tvshowDownloadInfo = null;
 
@@ -97,6 +100,7 @@ public class TVShowEpisodeDetailsFragment extends AbstractDetailsFragment
     @InjectView(R.id.fab) ImageButton fabButton;
     @InjectView(R.id.add_to_playlist) ImageButton addToPlaylistButton;
     @InjectView(R.id.download) ImageButton downloadButton;
+    @InjectView(R.id.stream) ImageButton streamButton;
     @InjectView(R.id.seen) ImageButton seenButton;
 
     // Detail views
@@ -428,7 +432,13 @@ public class TVShowEpisodeDetailsFragment extends AbstractDetailsFragment
 
     @Override
     protected void onStream() {
-        //@TODO implement functionality
+        if (tvshowDownloadInfo == null) {
+            // Nothing to stream
+            Toast.makeText(getActivity(), R.string.no_files_to_stream, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        FileDownloadHelper.streamFiles(getActivity(), getHostInfo(), tvshowDownloadInfo, callbackHandler, this);
     }
 
     /**
@@ -483,6 +493,8 @@ public class TVShowEpisodeDetailsFragment extends AbstractDetailsFragment
                                        cursor.getString(EpisodeDetailsQuery.THUMBNAIL),
                                        mediaArt, displayMetrics.widthPixels, artHeight);
 
+        fanArt = cursor.getString(EpisodeDetailsQuery.THUMBNAIL);
+
         // Setup movie download info
         tvshowDownloadInfo = new FileDownloadHelper.TVShowInfo(
                 cursor.getString(EpisodeDetailsQuery.SHOWTITLE),
@@ -518,6 +530,16 @@ public class TVShowEpisodeDetailsFragment extends AbstractDetailsFragment
         }
         // Save the playcount
         seenButton.setTag(playcount);
+    }
+
+    @Override
+    public void onStreamUrlFound(String mediaUrl) {
+        Intent intent = new Intent(getActivity(), FullScreenVideoPlayerActivity.class);
+        intent.putExtra(VideoPlayerActivity.EXTRA_TITLE, mediaTitle.getText().toString());
+        intent.putExtra(VideoPlayerActivity.EXTRA_TAG_LINE, mediaUndertitle.getText().toString());
+        intent.putExtra(VideoPlayerActivity.EXTRA_FAN_ART, fanArt);
+        intent.putExtra(VideoPlayerActivity.EXTRA_URL, mediaUrl);
+        startActivity(intent);
     }
 //
 //    /**

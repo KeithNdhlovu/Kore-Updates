@@ -19,15 +19,18 @@ public class StreamItems {
         private String mediaUrl;
         @Nullable
         private String artworkUrl;
+        @Nullable
+        private String tagline;
 
         public StreamItem(@NonNull String title, @NonNull String mediaUrl) {
-            this(title, mediaUrl, null);
+            this(title, mediaUrl, null, null);
         }
 
-        public StreamItem(@NonNull String title, @NonNull String mediaUrl, @Nullable String artworkUrl) {
+        public StreamItem(@NonNull String title, @NonNull String mediaUrl, @Nullable String artworkUrl, @Nullable String tagline) {
             this.title = title;
             this.mediaUrl = mediaUrl;
             this.artworkUrl = artworkUrl;
+            this.tagline = tagline;
         }
 
         @NonNull
@@ -43,6 +46,11 @@ public class StreamItems {
         @Nullable
         public String getArtworkUrl() {
             return artworkUrl;
+        }
+
+        @Nullable
+        public String getTagline() {
+            return tagline;
         }
     }
 }

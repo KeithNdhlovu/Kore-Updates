@@ -35,6 +35,7 @@ import org.xbmc.kore.jsonrpc.method.JSONRPC;
 import org.xbmc.kore.jsonrpc.type.FilesType;
 import org.xbmc.kore.ui.FullScreenVideoPlayerActivity;
 import org.xbmc.kore.ui.VideoPlayerActivity;
+import org.xbmc.kore.ui.VlcVideoActivity;
 
 import java.io.File;
 import java.util.List;
@@ -47,6 +48,10 @@ public class FileDownloadHelper {
 
     public static final int OVERWRITE_FILES = 0,
             DOWNLOAD_WITH_NEW_NAME = 1;
+
+    public interface  FileDownloadHelperCallbacks {
+        public void onStreamUrlFound(String mediaUrl);
+    };
 
     public static abstract class MediaInfo {
         public final String fileName;
@@ -297,7 +302,8 @@ public class FileDownloadHelper {
 
     public static void streamFiles(final Context context, final HostInfo hostInfo,
                                      final MediaInfo mediaInfo,
-                                     final Handler callbackHandler) {
+                                     final Handler callbackHandler,
+                                     final FileDownloadHelperCallbacks callbacks) {
         if (mediaInfo == null)
             return;
 
@@ -313,7 +319,7 @@ public class FileDownloadHelper {
             @Override
             public void onSuccess(String result) {
                 // Ok, continue, iterate through the song list and launch a download for each
-                streamSingleFile(context, httpHostConnection, hostInfo, mediaInfo, callbackHandler);
+                streamSingleFile(context, httpHostConnection, hostInfo, mediaInfo, callbackHandler, callbacks);
             }
 
             @Override
@@ -433,19 +439,15 @@ public class FileDownloadHelper {
                                            final HostConnection httpHostConnection,
                                            final HostInfo hostInfo,
                                            final MediaInfo mediaInfo,
-                                           final Handler callbackHandler) {
+                                           final Handler callbackHandler,
+                                           final FileDownloadHelperCallbacks callbacks) {
         Files.PrepareDownload action = new Files.PrepareDownload(mediaInfo.fileName);
         action.execute(httpHostConnection, new ApiCallback<FilesType.PrepareDownloadReturnType>() {
             @Override
             public void onSuccess(FilesType.PrepareDownloadReturnType result) {
                 // Ok, we got the path, invoke downloader
                 Uri uri = Uri.parse(hostInfo.getHttpURL() + "/" + result.path);
-
-                //Launch video Activity
-                Intent intent = new Intent(context, FullScreenVideoPlayerActivity.class);
-                intent.putExtra(VideoPlayerActivity.EXTRA_TITLE, mediaInfo.getDownloadTitle(context));
-                intent.putExtra(VideoPlayerActivity.EXTRA_URL, uri.toString());
-                context.startActivity(intent);
+                callbacks.onStreamUrlFound(uri.toString());
             }
 
             @Override

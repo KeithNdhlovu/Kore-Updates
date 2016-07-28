@@ -74,6 +74,12 @@
             android:screenOrientation="landscape">
         </activity>
 
+        <activity
+            android:name="org.xbmc.kore.ui.VlcVideoActivity"
+            android:configChanges="keyboardHidden|screenSize"
+            android:screenOrientation="landscape">
+        </activity>
+
         <!-- Providers -->
         <provider
             android:name="org.xbmc.kore.provider.MediaProvider"

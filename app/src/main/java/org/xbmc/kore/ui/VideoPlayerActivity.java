@@ -13,6 +13,7 @@ import org.xbmc.kore.App;
 import org.xbmc.kore.R;
 import org.xbmc.kore.playlist.PlaylistManager;
 import org.xbmc.kore.playlist.VideoApi;
+import org.xbmc.kore.utils.FileDownloadHelper;
 import org.xbmc.kore.utils.data.MediaItem;
 import org.xbmc.kore.utils.data.StreamItems;
 
@@ -21,8 +22,9 @@ import java.util.List;
 
 
 public class VideoPlayerActivity extends Activity implements PlaylistListener<MediaItem> {
-    public static final String EXTRA_INDEX = "EXTRA_INDEX";
     public static final String EXTRA_TITLE = "EXTRA_TITLE";
+    public static final String EXTRA_TAG_LINE = "EXTRA_TAG_LINE";
+    public static final String EXTRA_FAN_ART = "EXTRA_FAN_ART";
     public static final String EXTRA_URL = "EXTRA_URL";
     public static final int PLAYLIST_ID = 6; //Arbitrary, for the example (different from audio)
 
@@ -31,6 +33,8 @@ public class VideoPlayerActivity extends Activity implements PlaylistListener<Me
 
     protected int selectedIndex;
     protected String title;
+    protected String tagline;
+    protected String fanArt;
     protected String url;
     protected boolean pausedInOnStop = false;
 
@@ -103,7 +107,10 @@ public class VideoPlayerActivity extends Activity implements PlaylistListener<Me
     protected void retrieveExtras() {
         Bundle extras = getIntent().getExtras();
         selectedIndex = 0;
-        title = extras.getString(EXTRA_INDEX, "");
+        //otherwise start from the begining
+        title = extras.getString(EXTRA_TITLE, "");
+        fanArt = extras.getString(EXTRA_FAN_ART, "");
+        tagline = extras.getString(EXTRA_TAG_LINE, "");
         url = extras.getString(EXTRA_URL, "");
     }
 
@@ -123,7 +130,7 @@ public class VideoPlayerActivity extends Activity implements PlaylistListener<Me
     private void setupPlaylistManager() {
         playlistManager = App.getPlaylistManager();
 
-        StreamItems.StreamItem item = new StreamItems.StreamItem(title, url);
+        StreamItems.StreamItem item = new StreamItems.StreamItem(title, url, fanArt, tagline);
         List<MediaItem> mediaItems = new LinkedList<>();
         MediaItem mediaItem = new MediaItem(item, false);
         mediaItems.add(mediaItem);

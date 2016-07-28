@@ -60,7 +60,7 @@ public class MediaItem implements IPlaylistItem {
 
     @Override
     public String getAlbum() {
-        return "";
+        return sample.getTagline();
     }
 
     @Override
