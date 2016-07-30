@@ -164,11 +164,12 @@ public class VideoPlayerActivity extends Activity implements PlaylistListener<Me
             action.execute(hostManager.getConnection(), new ApiCallback<Integer>() {
                 @Override
                 public void onSuccess(Integer result) {
-                    Player.Seek seekAction = new Player.Seek(currentActivePlayerId, playlistManager.getCurrentProgress().getBufferPercent());
+                    Player.Seek seekAction = new Player.Seek(currentActivePlayerId, 0);
                     seekAction.execute(hostManager.getConnection(), new ApiCallback<PlayerType.SeekReturnType>() {
                         @Override
                         public void onSuccess(PlayerType.SeekReturnType result) {
                             // Ignore
+                            playlistManager.invokeSeekEnded(result.time.milliseconds);
                         }
 
                         @Override
@@ -192,11 +193,11 @@ public class VideoPlayerActivity extends Activity implements PlaylistListener<Me
             return true;
         }
 
-        if (playbackState == PlaylistServiceCore.PlaybackState.PREPARING) {
-            Player.PlayPause action = new Player.PlayPause(currentActivePlayerId);
-            action.execute(hostManager.getConnection(), defaultIntActionCallback, callbackHandler);
-            return true;
-        }
+//        if (playbackState == PlaylistServiceCore.PlaybackState.PREPARING) {
+//            Player.PlayPause action = new Player.PlayPause(currentActivePlayerId);
+//            action.execute(hostManager.getConnection(), defaultIntActionCallback, callbackHandler);
+//            return true;
+//        }
 
         return false;
     }
@@ -254,7 +255,7 @@ public class VideoPlayerActivity extends Activity implements PlaylistListener<Me
         playlistManager.setAllowedMediaType(BasePlaylistManager.AUDIO | BasePlaylistManager.VIDEO);
         playlistManager.setParameters(mediaItems, selectedIndex);
         playlistManager.setId(PLAYLIST_ID);
-        playlistManager.play(50, false);
+        playlistManager.play(0, false);
     }
 
     @Override
@@ -272,8 +273,7 @@ public class VideoPlayerActivity extends Activity implements PlaylistListener<Me
                               PlayerType.PropertyValue getPropertiesResult,
                               ListType.ItemsAll getItemResult) {
         currentActivePlayerId = getActivePlayerResult.playerid;
-
-        startService(new Intent(this, ConnectionObserversManagerService.class));
+        playerOnPlay(getActivePlayerResult, getPropertiesResult, getItemResult);
     }
 
     @Override
