@@ -62,6 +62,7 @@ import org.xbmc.kore.provider.MediaContract;
 import org.xbmc.kore.service.library.LibrarySyncService;
 import org.xbmc.kore.utils.FileDownloadHelper;
 import org.xbmc.kore.utils.LogUtils;
+import org.xbmc.kore.utils.SharedPreferenceManager;
 import org.xbmc.kore.utils.UIUtils;
 import org.xbmc.kore.utils.Utils;
 
@@ -514,6 +515,8 @@ public class MovieDetailsFragment extends AbstractDetailsFragment
             return;
         }
 
+        Toast.makeText(getActivity(), "Fetching Stream", Toast.LENGTH_SHORT)
+                .show();
         FileDownloadHelper.streamFiles(getActivity(), getHostInfo(), movieDownloadInfo, callbackHandler, this);
     }
 
@@ -678,16 +681,37 @@ public class MovieDetailsFragment extends AbstractDetailsFragment
 
     @Override
     public void onStreamUrlFound(String mediaUrl) {
-        Intent intent = new Intent(getActivity(), FullScreenVideoPlayerActivity.class);
-        intent.putExtra(VideoPlayerActivity.EXTRA_TITLE, movieTitle);
-        intent.putExtra(VideoPlayerActivity.EXTRA_TAG_LINE, movieTagline);
-        intent.putExtra(VideoPlayerActivity.EXTRA_FAN_ART, movieFanArt);
-        intent.putExtra(VideoPlayerActivity.EXTRA_URL, mediaUrl);
-        startActivity(intent);
+        Toast.makeText(getActivity(), "Successfully found stream", Toast.LENGTH_SHORT)
+                .show();
 
-        //Intent intent = new Intent(getActivity(), VlcVideoActivity.class);
-        //intent.putExtra(VideoPlayerActivity.EXTRA_URL, mediaUrl);
-        //startActivity(intent);
+        //set currently playing details
+        SharedPreferenceManager sharedPreferenceManager  = SharedPreferenceManager.getInstance(getActivity());
+        sharedPreferenceManager.setKeyCurrentStreamTitle(mediaTitle.getText().toString());
+        sharedPreferenceManager.setKeyCurrentStreamTagline(mediaUndertitle.getText().toString());
+        sharedPreferenceManager.setKeyCurrentStreamUrl(mediaUrl);
+        sharedPreferenceManager.setKeyCurrentStreamArt(movieFanArt);
+
+        PlaylistType.Item item = new PlaylistType.Item();
+        item.movieid = movieId;
+        Player.Open action = new Player.Open(item);
+
+        Toast.makeText(getActivity(), "Attempting video sync", Toast.LENGTH_SHORT).show();
+        action.execute(getHostManager().getConnection(), new ApiCallback<String>() {
+            @Override
+            public void onSuccess(String result) {
+                if (!isAdded()) return;
+
+                Intent intent = new Intent(getActivity(), FullScreenVideoPlayerActivity.class);
+                startActivity(intent);
+            }
+
+            @Override
+            public void onError(int errorCode, String description) {
+                if (!isAdded()) return;
+                // Got an error, show toast
+                Toast.makeText(getActivity(), R.string.unable_to_connect_to_xbmc, Toast.LENGTH_SHORT).show();
+            }
+        }, callbackHandler);
     }
 
     /**

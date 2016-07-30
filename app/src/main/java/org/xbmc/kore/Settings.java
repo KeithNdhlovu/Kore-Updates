@@ -132,12 +132,6 @@ public class Settings {
     public static final String KEY_PREF_SINGLE_COLUMN = "pref_single_multi_column";
     public static final boolean DEFAULT_PREF_SINGLE_COLUMN = false;
 
-
-    //stream media
-    private static final String KEY_CURRENT_STREAM_URL = "current_stream_Url";
-    private static final String KEY_CURRENT_STREAM_TITLE = "current_stream_title";
-    private static final String KEY_CURRENT_STREAM_TAGLINE = "current_stream_tagline";
-
     /**
      * Determines the bit flags used by {@link DownloadManager.Request} to correspond to the enabled network connections
      * from the settings screen.

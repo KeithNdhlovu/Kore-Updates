@@ -24,6 +24,7 @@ import org.xbmc.kore.playlist.VideoApi;
 import org.xbmc.kore.ui.FullScreenVideoPlayerActivity;
 import org.xbmc.kore.ui.RemoteActivity;
 import org.xbmc.kore.ui.VideoPlayerActivity;
+import org.xbmc.kore.utils.SharedPreferenceManager;
 import org.xbmc.kore.utils.data.MediaItem;
 
 /**
@@ -228,5 +229,13 @@ public class MediaService extends BasePlaylistService<MediaItem, PlaylistManager
         public void onPrepareLoad(Drawable placeHolderDrawable) {
             //Purposefully left blank
         }
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+
+        SharedPreferenceManager sharedPreferenceManager = SharedPreferenceManager.getInstance(getApplicationContext());
+        sharedPreferenceManager.clear();
     }
 }

@@ -1,8 +1,13 @@
 package org.xbmc.kore.ui;
 
 import android.app.Activity;
+import android.content.Intent;
+import android.media.session.PlaybackState;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.NonNull;
+import android.text.TextUtils;
+import android.widget.Toast;
 
 import com.devbrackets.android.exomedia.ui.widget.EMVideoView;
 import com.devbrackets.android.playlistcore.listener.PlaylistListener;
@@ -11,22 +16,36 @@ import com.devbrackets.android.playlistcore.service.PlaylistServiceCore;
 
 import org.xbmc.kore.App;
 import org.xbmc.kore.R;
+import org.xbmc.kore.host.HostConnectionObserver;
+import org.xbmc.kore.host.HostManager;
+import org.xbmc.kore.jsonrpc.ApiCallback;
+import org.xbmc.kore.jsonrpc.ApiMethod;
+import org.xbmc.kore.jsonrpc.HostConnection;
+import org.xbmc.kore.jsonrpc.method.Player;
+import org.xbmc.kore.jsonrpc.type.ListType;
+import org.xbmc.kore.jsonrpc.type.PlayerType;
+import org.xbmc.kore.jsonrpc.type.PlaylistType;
 import org.xbmc.kore.playlist.PlaylistManager;
 import org.xbmc.kore.playlist.VideoApi;
+import org.xbmc.kore.service.ConnectionObserversManagerService;
+import org.xbmc.kore.service.NotificationObserver;
+import org.xbmc.kore.ui.hosts.AddHostActivity;
 import org.xbmc.kore.utils.FileDownloadHelper;
+import org.xbmc.kore.utils.LogUtils;
+import org.xbmc.kore.utils.SharedPreferenceManager;
 import org.xbmc.kore.utils.data.MediaItem;
 import org.xbmc.kore.utils.data.StreamItems;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
 
-public class VideoPlayerActivity extends Activity implements PlaylistListener<MediaItem> {
-    public static final String EXTRA_TITLE = "EXTRA_TITLE";
-    public static final String EXTRA_TAG_LINE = "EXTRA_TAG_LINE";
-    public static final String EXTRA_FAN_ART = "EXTRA_FAN_ART";
-    public static final String EXTRA_URL = "EXTRA_URL";
+public class VideoPlayerActivity extends Activity implements PlaylistListener<MediaItem>, HostConnectionObserver.PlayerEventsObserver{
+    private static final String TAG = VideoPlayerActivity.class.getSimpleName();
+
     public static final int PLAYLIST_ID = 6; //Arbitrary, for the example (different from audio)
+    private SharedPreferenceManager sharedPreferenceManager;
 
     protected EMVideoView emVideoView;
     protected PlaylistManager playlistManager;
@@ -38,12 +57,46 @@ public class VideoPlayerActivity extends Activity implements PlaylistListener<Me
     protected String url;
     protected boolean pausedInOnStop = false;
 
+    /**
+     * Host manager singleton
+     */
+    private HostManager hostManager = null;
+
+    private Handler callbackHandler = new Handler();
+
+    /**
+     * To register for observing host events
+     */
+    private HostConnectionObserver hostConnectionObserver;
+
+    /**
+     * The current active player id
+     */
+    private int currentActivePlayerId = -1;
+
+    /**
+     * Default callback for methods that don't return anything
+     */
+    private ApiCallback<String> defaultStringActionCallback = ApiMethod.getDefaultActionCallback();
+    private ApiCallback<Integer> defaultIntActionCallback = ApiMethod.getDefaultActionCallback();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.video_player_activity);
 
-        retrieveExtras();
+        sharedPreferenceManager = SharedPreferenceManager.getInstance(this);
+        hostManager = HostManager.getInstance(this);
+
+        // Check if we have any hosts setup
+        if (hostManager.getHostInfo() == null) {
+            final Intent intent = new Intent(this, AddHostActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
+            finish();
+        }
+
         init();
     }
 
@@ -57,7 +110,7 @@ public class VideoPlayerActivity extends Activity implements PlaylistListener<Me
     }
 
     @Override
-    protected void onStart() {
+    public void onStart() {
         super.onStart();
 
         if (pausedInOnStop) {
@@ -67,22 +120,31 @@ public class VideoPlayerActivity extends Activity implements PlaylistListener<Me
     }
 
     @Override
-    protected void onPause() {
+    public void onPause() {
         super.onPause();
         playlistManager.unRegisterPlaylistListener(this);
+
+        if (hostConnectionObserver != null) hostConnectionObserver.unregisterPlayerObserver(this);
+        hostConnectionObserver = null;
     }
 
     @Override
-    protected void onResume() {
+    public void onResume() {
         super.onResume();
         playlistManager = App.getPlaylistManager();
         playlistManager.registerPlaylistListener(this);
+
+        hostConnectionObserver = hostManager.getHostConnectionObserver();
+        hostConnectionObserver.registerPlayerObserver(this, true);
+        // Force a refresh, mainly to update the time elapsed on the fragments
+        hostConnectionObserver.forceRefreshResults();
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
         playlistManager.invokeStop();
+        sharedPreferenceManager.clear();
     }
 
     @Override
@@ -97,30 +159,79 @@ public class VideoPlayerActivity extends Activity implements PlaylistListener<Me
             return true;
         }
 
+        if (playbackState == PlaylistServiceCore.PlaybackState.PLAYING) {
+            Player.PlayPause action = new Player.PlayPause(currentActivePlayerId);
+            action.execute(hostManager.getConnection(), new ApiCallback<Integer>() {
+                @Override
+                public void onSuccess(Integer result) {
+                    Player.Seek seekAction = new Player.Seek(currentActivePlayerId, playlistManager.getCurrentProgress().getBufferPercent());
+                    seekAction.execute(hostManager.getConnection(), new ApiCallback<PlayerType.SeekReturnType>() {
+                        @Override
+                        public void onSuccess(PlayerType.SeekReturnType result) {
+                            // Ignore
+                        }
+
+                        @Override
+                        public void onError(int errorCode, String description) {
+                            LogUtils.LOGD(TAG, "Got an error calling Player.Seek. Error code: " + errorCode + ", description: " + description);
+                        }
+                    }, callbackHandler);
+                }
+
+                @Override
+                public void onError(int errorCode, String description) {
+
+                }
+            }, callbackHandler);
+            return true;
+        }
+
+        if (playbackState == PlaylistServiceCore.PlaybackState.PAUSED) {
+            Player.PlayPause action = new Player.PlayPause(currentActivePlayerId);
+            action.execute(hostManager.getConnection(), defaultIntActionCallback, callbackHandler);
+            return true;
+        }
+
+        if (playbackState == PlaylistServiceCore.PlaybackState.PREPARING) {
+            Player.PlayPause action = new Player.PlayPause(currentActivePlayerId);
+            action.execute(hostManager.getConnection(), defaultIntActionCallback, callbackHandler);
+            return true;
+        }
+
         return false;
     }
 
-    /**
-     * Retrieves the extra associated with the selected playlist index
-     * so that we can start playing the correct item.
-     */
-    protected void retrieveExtras() {
-        Bundle extras = getIntent().getExtras();
-        selectedIndex = 0;
-        //otherwise start from the begining
-        title = extras.getString(EXTRA_TITLE, "");
-        fanArt = extras.getString(EXTRA_FAN_ART, "");
-        tagline = extras.getString(EXTRA_TAG_LINE, "");
-        url = extras.getString(EXTRA_URL, "");
-    }
-
     protected void init() {
+
+        // Check if any video player is active and clear the playlist before queuing if so
+        final HostConnection connection = hostManager.getConnection();
+        Player.GetActivePlayers getActivePlayers = new Player.GetActivePlayers();
+        getActivePlayers.execute(connection, new ApiCallback<ArrayList<PlayerType.GetActivePlayersReturnType>>() {
+            @Override
+            public void onSuccess(ArrayList<PlayerType.GetActivePlayersReturnType> result) {
+                boolean videoIsPlaying = false;
+
+                for (PlayerType.GetActivePlayersReturnType player : result) {
+                    currentActivePlayerId = player.playerid;
+                }
+
+                Player.PlayPause action = new Player.PlayPause(currentActivePlayerId);
+                action.execute(hostManager.getConnection(), defaultIntActionCallback, callbackHandler);
+            }
+
+            @Override
+            public void onError(int errorCode, String description) {
+                LogUtils.LOGD(TAG, "Couldn't get active player when start init.");
+                Toast.makeText(VideoPlayerActivity.this,
+                        String.format(getString(R.string.error_get_active_player), description),
+                        Toast.LENGTH_SHORT).show();
+            }
+        }, callbackHandler);
+
         setupPlaylistManager();
 
         emVideoView = (EMVideoView)findViewById(R.id.video_play_activity_video_view);
-
         playlistManager.setVideoPlayer(new VideoApi(emVideoView));
-        playlistManager.play(0, false);
     }
 
     /**
@@ -130,6 +241,11 @@ public class VideoPlayerActivity extends Activity implements PlaylistListener<Me
     private void setupPlaylistManager() {
         playlistManager = App.getPlaylistManager();
 
+        title = sharedPreferenceManager.getKeyCurrentStreamTitle();
+        url = sharedPreferenceManager.getKeyCurrentStreamUrl();
+        fanArt = sharedPreferenceManager.getKeyCurrentStreamArt();
+        tagline = sharedPreferenceManager.getKeyCurrentStreamTagline();
+
         StreamItems.StreamItem item = new StreamItems.StreamItem(title, url, fanArt, tagline);
         List<MediaItem> mediaItems = new LinkedList<>();
         MediaItem mediaItem = new MediaItem(item, false);
@@ -138,5 +254,55 @@ public class VideoPlayerActivity extends Activity implements PlaylistListener<Me
         playlistManager.setAllowedMediaType(BasePlaylistManager.AUDIO | BasePlaylistManager.VIDEO);
         playlistManager.setParameters(mediaItems, selectedIndex);
         playlistManager.setId(PLAYLIST_ID);
+        playlistManager.play(50, false);
+    }
+
+    @Override
+    public void playerOnPlay(PlayerType.GetActivePlayersReturnType getActivePlayerResult,
+                             PlayerType.PropertyValue getPropertiesResult,
+                             ListType.ItemsAll getItemResult) {
+        currentActivePlayerId = getActivePlayerResult.playerid;
+        // Start service that manages connection observers
+        LogUtils.LOGD(TAG, "Starting observer service");
+        startService(new Intent(this, ConnectionObserversManagerService.class));
+    }
+
+    @Override
+    public void playerOnPause(PlayerType.GetActivePlayersReturnType getActivePlayerResult,
+                              PlayerType.PropertyValue getPropertiesResult,
+                              ListType.ItemsAll getItemResult) {
+        currentActivePlayerId = getActivePlayerResult.playerid;
+
+        startService(new Intent(this, ConnectionObserversManagerService.class));
+    }
+
+    @Override
+    public void playerOnStop() {
+        playlistManager.invokeStop();
+    }
+
+    @Override
+    public void playerOnConnectionError(int errorCode, String description) {
+        //@TODO nothing
+    }
+
+    @Override
+    public void playerNoResultsYet() {
+        //@TODO nothing
+    }
+
+    @Override
+    public void systemOnQuit() {
+        //@TODO nothing
+    }
+
+    @Override
+    public void inputOnInputRequested(String title, String type, String value) {
+        //@TODO nothing
+    }
+
+    @Override
+    public void observerOnStopObserving() {
+        //@TODO nothing
     }
 }
