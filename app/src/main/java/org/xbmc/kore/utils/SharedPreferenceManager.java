@@ -19,6 +19,7 @@ public class SharedPreferenceManager {
     private static final String KEY_CURRENT_STREAM_ART = "current_stream_art";
     private static final String KEY_CURRENT_PLAYLIST_ID = "current_playlist_id";
     private static final String KEY_CURRENT_STREAM_ITEM_ID = "current_stream_item_id";
+    private static final String KEY_CURRENT_STREAM_PLAYBACK_POSTION = "current_playback_position";
 
     //Variables
     public static SharedPreferenceManager instance;
@@ -95,6 +96,16 @@ public class SharedPreferenceManager {
 
     public int getKeyCurrentStreamItemId(){
         return settings.getInt(KEY_CURRENT_STREAM_ITEM_ID, -1);
+    }
+
+    public void setKeyCurrentPlaybackPosition(int seekPosition){
+        SharedPreferences.Editor edit = settings.edit();
+        edit.putInt(KEY_CURRENT_STREAM_PLAYBACK_POSTION, seekPosition);
+        edit.apply();
+    }
+
+    public int getKeyCurrentPlaybackPosition(){
+        return settings.getInt(KEY_CURRENT_STREAM_PLAYBACK_POSTION, -1);
     }
 
     public void clear() {

@@ -7,6 +7,9 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.text.TextUtils;
+import android.util.Log;
+import android.widget.ProgressBar;
+import android.widget.SeekBar;
 import android.widget.Toast;
 
 import com.devbrackets.android.exomedia.ui.widget.EMVideoView;
@@ -74,6 +77,8 @@ public class VideoPlayerActivity extends Activity implements PlaylistListener<Me
      */
     private int currentActivePlayerId = -1;
 
+    private int mediaTotalTime = 0,
+            mediaCurrentTime = 0; // s
     /**
      * Default callback for methods that don't return anything
      */
@@ -143,7 +148,14 @@ public class VideoPlayerActivity extends Activity implements PlaylistListener<Me
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        playlistManager.invokeStop();
+        playerOnStop();
+        sharedPreferenceManager.clear();
+    }
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        playerOnStop();
         sharedPreferenceManager.clear();
     }
 
@@ -153,7 +165,7 @@ public class VideoPlayerActivity extends Activity implements PlaylistListener<Me
     }
 
     @Override
-    public boolean onPlaybackStateChanged(@NonNull PlaylistServiceCore.PlaybackState playbackState) {
+    public boolean onPlaybackStateChanged(@NonNull final PlaylistServiceCore.PlaybackState playbackState) {
         if (playbackState == PlaylistServiceCore.PlaybackState.STOPPED) {
             finish();
             return true;
@@ -161,29 +173,35 @@ public class VideoPlayerActivity extends Activity implements PlaylistListener<Me
 
         if (playbackState == PlaylistServiceCore.PlaybackState.PLAYING) {
             Player.PlayPause action = new Player.PlayPause(currentActivePlayerId);
-            action.execute(hostManager.getConnection(), new ApiCallback<Integer>() {
-                @Override
-                public void onSuccess(Integer result) {
-                    Player.Seek seekAction = new Player.Seek(currentActivePlayerId, 0);
-                    seekAction.execute(hostManager.getConnection(), new ApiCallback<PlayerType.SeekReturnType>() {
-                        @Override
-                        public void onSuccess(PlayerType.SeekReturnType result) {
-                            // Ignore
-                            playlistManager.invokeSeekEnded(result.time.milliseconds);
-                        }
+            action.execute(hostManager.getConnection(), defaultIntActionCallback, callbackHandler);
 
-                        @Override
-                        public void onError(int errorCode, String description) {
-                            LogUtils.LOGD(TAG, "Got an error calling Player.Seek. Error code: " + errorCode + ", description: " + description);
-                        }
-                    }, callbackHandler);
+            int hours = mediaCurrentTime / 3600;
+            int minutes = (mediaCurrentTime % 3600) / 60;
+            int seconds = (mediaCurrentTime % 3600) % 60;
+            int milliseconds = ( (mediaCurrentTime % 3600) % 60 ) * 1000;
+
+            PlayerType.PositionTime positionTime = new PlayerType.PositionTime(hours, minutes, seconds, milliseconds);
+            Player.Seek seekAction = new Player.Seek(currentActivePlayerId, positionTime);
+            seekAction.execute(hostManager.getConnection(), new ApiCallback<PlayerType.SeekReturnType>() {
+                @Override
+                public void onSuccess(PlayerType.SeekReturnType result) {
+                    // Ignore
+                    playlistManager.invokeSeekEnded(result.time.milliseconds);
                 }
 
                 @Override
                 public void onError(int errorCode, String description) {
-
+                    LogUtils.LOGD(TAG, "Got an error calling Player.Seek. Error code: " + errorCode + ", description: " + description);
                 }
             }, callbackHandler);
+            return true;
+        }
+
+        if (playbackState == PlaylistServiceCore.PlaybackState.ERROR) {
+            //@TODO: show error dialog
+            Toast.makeText(VideoPlayerActivity.this, "An error has occured while trying to play media", Toast.LENGTH_SHORT)
+                    .show();
+            playerOnStop();
             return true;
         }
 
@@ -233,6 +251,27 @@ public class VideoPlayerActivity extends Activity implements PlaylistListener<Me
 
         emVideoView = (EMVideoView)findViewById(R.id.video_play_activity_video_view);
         playlistManager.setVideoPlayer(new VideoApi(emVideoView));
+
+        SeekBar seekBar = (SeekBar) emVideoView.findViewById(R.id.exomedia_controls_video_seek);
+
+        seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                if (!fromUser) {
+                    mediaCurrentTime = progress;
+                }
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+                //nothing
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                //nothing
+            }
+        });
     }
 
     /**
@@ -273,7 +312,7 @@ public class VideoPlayerActivity extends Activity implements PlaylistListener<Me
                               PlayerType.PropertyValue getPropertiesResult,
                               ListType.ItemsAll getItemResult) {
         currentActivePlayerId = getActivePlayerResult.playerid;
-        playerOnPlay(getActivePlayerResult, getPropertiesResult, getItemResult);
+        //playerOnPlay(getActivePlayerResult, getPropertiesResult, getItemResult);
     }
 
     @Override
