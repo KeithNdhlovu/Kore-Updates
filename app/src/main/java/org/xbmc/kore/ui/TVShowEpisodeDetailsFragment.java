@@ -543,26 +543,42 @@ public class TVShowEpisodeDetailsFragment extends AbstractDetailsFragment
         sharedPreferenceManager.setKeyCurrentStreamUrl(mediaUrl);
         sharedPreferenceManager.setKeyCurrentStreamArt(fanArt);
 
-        PlaylistType.Item item = new PlaylistType.Item();
-        item.episodeid = episodeId;
-        Player.Open action = new Player.Open(item);
-        action.execute(getHostManager().getConnection(), new ApiCallback<String>() {
-            @Override
-            public void onSuccess(String result) {
-                if (!isAdded()) return;
+        new AlertDialog.Builder(getActivity())
+                .setTitle("Choose Stream Method")
+                .setMessage("Please select how you would like your media stream played")
+                .setPositiveButton("Mobile Only", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int whichButton) {
+                        Intent intent = new Intent(getActivity(), DeviceOnlyFullScreenVideoPlayerActivity.class);
+                        startActivity(intent);
+                    }
+                })
+                .setNegativeButton("Computer and Mobile", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        PlaylistType.Item item = new PlaylistType.Item();
+                        item.episodeid = episodeId;
+                        Player.Open action = new Player.Open(item);
 
-                Intent intent = new Intent(getActivity(), FullScreenVideoPlayerActivity.class);
-                startActivity(intent);
-            }
+                        Toast.makeText(getActivity(), "Attempting video sync", Toast.LENGTH_SHORT).show();
+                        action.execute(getHostManager().getConnection(), new ApiCallback<String>() {
+                            @Override
+                            public void onSuccess(String result) {
+                                if (!isAdded()) return;
 
-            @Override
-            public void onError(int errorCode, String description) {
-                if (!isAdded()) return;
-                // Got an error, show toast
-                Toast.makeText(getActivity(), R.string.unable_to_connect_to_xbmc, Toast.LENGTH_SHORT)
-                        .show();
-            }
-        }, callbackHandler);
+                                Intent intent = new Intent(getActivity(), FullScreenVideoPlayerActivity.class);
+                                startActivity(intent);
+                            }
+
+                            @Override
+                            public void onError(int errorCode, String description) {
+                                if (!isAdded()) return;
+                                // Got an error, show toast
+                                Toast.makeText(getActivity(), R.string.unable_to_connect_to_xbmc, Toast.LENGTH_SHORT).show();
+                            }
+                        }, callbackHandler);
+                    }
+                })
+                .show();
     }
 //
 //    /**

@@ -114,12 +114,20 @@ public class MediaService extends BasePlaylistService<MediaItem, PlaylistManager
 
     @Override
     protected void updateLargeNotificationImage(int size, MediaItem playlistItem) {
-        picasso.load(playlistItem.getThumbnailUrl()).into(notificationImageTarget);
+        if(playlistItem.getThumbnailUrl().isEmpty())
+            picasso.load(R.drawable.ic_launcher).into(notificationImageTarget);
+        else {
+            picasso.load(playlistItem.getThumbnailUrl()).into(notificationImageTarget);
+        }
     }
 
     @Override
     protected void updateRemoteViewArtwork(MediaItem playlistItem) {
-        picasso.load(playlistItem.getArtworkUrl()).into(lockScreenImageTarget);
+        if(playlistItem.getThumbnailUrl().isEmpty())
+            picasso.load(R.drawable.ic_launcher).into(lockScreenImageTarget);
+        else {
+            picasso.load(playlistItem.getThumbnailUrl()).into(notificationImageTarget);
+        }
     }
 
     @Nullable

@@ -185,7 +185,6 @@ public class VideoPlayerActivity extends Activity implements PlaylistListener<Me
             seekAction.execute(hostManager.getConnection(), new ApiCallback<PlayerType.SeekReturnType>() {
                 @Override
                 public void onSuccess(PlayerType.SeekReturnType result) {
-                    // Ignore
                     playlistManager.invokeSeekEnded(result.time.milliseconds);
                 }
 

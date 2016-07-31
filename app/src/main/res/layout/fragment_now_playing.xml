@@ -220,6 +220,14 @@
                     android:src="?attr/iconShuffle"
                     android:contentDescription="@string/shuffle"/>
                 <ImageButton
+                    android:id="@+id/stream_to_device"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="match_parent"
+                    style="@style/Widget.Button.Borderless"
+                    android:src="?attr/iconStream"
+                    android:contentDescription="@string/stream"/>
+                <ImageButton
                     android:id="@+id/overflow"
                     android:layout_width="0dp"
                     android:layout_weight="1"

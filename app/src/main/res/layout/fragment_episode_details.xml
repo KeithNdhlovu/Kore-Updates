@@ -113,7 +113,7 @@
                         android:layout_height="match_parent"
                         style="@style/Widget.Button.Borderless"
                         android:src="?attr/iconStream"
-                        android:contentDescription="@string/download"
+                        android:contentDescription="@string/stream"
                         />
                     <ImageButton
                         android:id="@+id/seen"

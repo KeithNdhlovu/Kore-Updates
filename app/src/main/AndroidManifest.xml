@@ -69,15 +69,25 @@
         </activity>
 
         <activity
+            android:name="org.xbmc.kore.ui.DeviceOnlyVideoPlayerActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize">
+        </activity>
+
+        <activity
             android:name="org.xbmc.kore.ui.FullScreenVideoPlayerActivity"
             android:configChanges="keyboardHidden|screenSize"
             android:screenOrientation="landscape">
         </activity>
 
         <activity
-            android:name="org.xbmc.kore.ui.VlcVideoActivity"
+            android:name="org.xbmc.kore.ui.DeviceOnlyFullScreenVideoPlayerActivity"
             android:configChanges="keyboardHidden|screenSize"
             android:screenOrientation="landscape">
+        </activity>
+
+        <activity
+            android:name="org.xbmc.kore.ui.AudioPlayerActivity"
+            android:configChanges="keyboardHidden|screenSize">
         </activity>
 
         <!-- Providers -->

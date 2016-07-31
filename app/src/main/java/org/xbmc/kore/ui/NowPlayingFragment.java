@@ -16,6 +16,7 @@
 package org.xbmc.kore.ui;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.os.Bundle;
@@ -39,6 +40,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import org.xbmc.kore.R;
+import org.xbmc.kore.Settings;
 import org.xbmc.kore.host.HostConnectionObserver;
 import org.xbmc.kore.host.HostInfo;
 import org.xbmc.kore.host.HostManager;
@@ -55,8 +57,10 @@ import org.xbmc.kore.jsonrpc.type.GlobalType;
 import org.xbmc.kore.jsonrpc.type.ListType;
 import org.xbmc.kore.jsonrpc.type.PlayerType;
 import org.xbmc.kore.jsonrpc.type.VideoType;
+import org.xbmc.kore.utils.FileDownloadHelper;
 import org.xbmc.kore.utils.LogUtils;
 import org.xbmc.kore.utils.RepeatListener;
+import org.xbmc.kore.utils.SharedPreferenceManager;
 import org.xbmc.kore.utils.UIUtils;
 import org.xbmc.kore.utils.Utils;
 
@@ -72,7 +76,7 @@ import butterknife.OnClick;
  */
 public class NowPlayingFragment extends Fragment
         implements HostConnectionObserver.PlayerEventsObserver,
-        GenericSelectDialog.GenericSelectDialogListener {
+        GenericSelectDialog.GenericSelectDialogListener, FileDownloadHelper.FileDownloadHelperCallbacks {
     private static final String TAG = LogUtils.makeLogTag(NowPlayingFragment.class);
 
     /**
@@ -123,6 +127,11 @@ public class NowPlayingFragment extends Fragment
     private int currentAudiostreamIndex = -1;
 
     /**
+     * The info thats going to be used for sending data to device
+     */
+    private FileDownloadHelper.MediaInfo mediaInfo = null;
+
+    /**
      * Injectable views
      */
     @InjectView(R.id.play) ImageButton playButton;
@@ -131,6 +140,7 @@ public class NowPlayingFragment extends Fragment
     @InjectView(R.id.next) ImageButton nextButton;
     @InjectView(R.id.rewind) ImageButton rewindButton;
     @InjectView(R.id.fast_forward) ImageButton fastForwardButton;
+    @InjectView(R.id.stream_to_device) ImageButton streamToDevice;
 
     @InjectView(R.id.volume_down) ImageButton volumeDownButton;
     @InjectView(R.id.volume_up) ImageButton volumeUpButton;
@@ -300,6 +310,75 @@ public class NowPlayingFragment extends Fragment
     public void onNextClicked(View v) {
         Player.GoTo action = new Player.GoTo(currentActivePlayerId, Player.GoTo.NEXT);
         action.execute(hostManager.getConnection(), defaultStringActionCallback, callbackHandler);
+    }
+
+    @OnClick(R.id.stream_to_device)
+    public void onStreamToDeviceClicked(View v) {
+
+        //Pause the computer
+        Player.PlayPause action = new Player.PlayPause(currentActivePlayerId);
+        action.execute(hostManager.getConnection(), new ApiCallback<Integer>() {
+            @Override
+            public void onSuccess(Integer result) {
+                //set necessary parameters for mobile playing
+                if (Settings.allowedDownloadNetworkTypes(getActivity()) != 0) {
+                    onStream();
+                } else {
+                    Toast.makeText(getActivity(), R.string.no_connection_type_selected, Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onError(int errorCode, String description) {
+
+            }
+        }, callbackHandler);
+
+    }
+
+    public void onStream(){
+        if (mediaInfo == null) {
+            // Nothing to stream
+            Toast.makeText(getActivity(), R.string.no_files_to_stream, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Toast.makeText(getActivity(), "Fetching Stream", Toast.LENGTH_SHORT)
+                .show();
+        FileDownloadHelper.streamFiles(getActivity(), hostManager.getHostInfo(), mediaInfo, callbackHandler, this);
+    }
+
+    @Override
+    public void onStreamUrlFound(String mediaUrl) {
+        //set currently playing details
+        SharedPreferenceManager sharedPreferenceManager  = SharedPreferenceManager.getInstance(getActivity());
+        sharedPreferenceManager.setKeyCurrentStreamTitle(mediaTitle.getText().toString());
+        sharedPreferenceManager.setKeyCurrentStreamTagline(mediaUndertitle.getText().toString());
+        sharedPreferenceManager.setKeyCurrentStreamUrl(mediaUrl);
+
+        int hours = mediaCurrentTime / 3600;
+        int minutes = (mediaCurrentTime % 3600) / 60;
+        int seconds = (mediaCurrentTime % 3600) % 60;
+
+        int currentTimeStream = hours * 3600 + minutes * 60 + seconds;
+        sharedPreferenceManager.setKeyCurrentPlaybackPosition(currentTimeStream);
+
+        switch (mediaCurrentlyPlayingType) {
+            case 0: //Audio type playing
+                Intent audioIntent = new Intent(getActivity(), AudioPlayerActivity.class);
+                startActivity(audioIntent);
+                break;
+            case 1: //Video type playing
+                Intent videoIntent = new Intent(getActivity(), DeviceOnlyFullScreenVideoPlayerActivity.class);
+                startActivity(videoIntent);
+                break;
+            case 2: //Picture playing
+                Toast.makeText(getActivity(), "No Picture Streaming yet", Toast.LENGTH_SHORT).show();
+                break;
+            default: //undefined
+                Toast.makeText(getActivity(), "Unable to recognise currently playing", Toast.LENGTH_SHORT).show();
+                break;
+        }
     }
 
     /**
@@ -645,6 +724,19 @@ public class NowPlayingFragment extends Fragment
                 descriptionPlot, votes, maxRating;
         double rating;
 
+        //determine the curently playing Media item type
+        switch (getPropertiesResult.type) {
+            case PlayerType.PropertyValue.TYPE_AUDIO:
+                mediaCurrentlyPlayingType = 0;
+                break;
+            case PlayerType.PropertyValue.TYPE_VIDEO:
+                mediaCurrentlyPlayingType = 1;
+                break;
+            case PlayerType.PropertyValue.TYPE_PICTURE:
+                mediaCurrentlyPlayingType = 2;
+                break;
+        }
+
         switch (getItemResult.type) {
             case ListType.ItemsAll.TYPE_MOVIE:
                 switchToPanel(R.id.media_panel);
@@ -660,6 +752,9 @@ public class NowPlayingFragment extends Fragment
                 rating = getItemResult.rating;
                 maxRating = getString(R.string.max_rating_video);
                 votes = (TextUtils.isEmpty(getItemResult.votes)) ? "" : String.format(getString(R.string.votes), getItemResult.votes);
+
+                mediaInfo = new FileDownloadHelper.MovieInfo(
+                        title, getItemResult.file);
                 break;
             case ListType.ItemsAll.TYPE_EPISODE:
                 switchToPanel(R.id.media_panel);
@@ -675,6 +770,9 @@ public class NowPlayingFragment extends Fragment
                 rating = getItemResult.rating;
                 maxRating = getString(R.string.max_rating_video);
                 votes = (TextUtils.isEmpty(getItemResult.votes)) ? "" : String.format(getString(R.string.votes), getItemResult.votes);
+
+                mediaInfo = new FileDownloadHelper.MovieInfo(
+                        title, getItemResult.file);
                 break;
             case ListType.ItemsAll.TYPE_SONG:
                 switchToPanel(R.id.media_panel);
@@ -690,6 +788,9 @@ public class NowPlayingFragment extends Fragment
                 rating = getItemResult.rating;
                 maxRating = getString(R.string.max_rating_music);
                 votes = (TextUtils.isEmpty(getItemResult.votes)) ? "" : String.format(getString(R.string.votes), getItemResult.votes);
+
+                mediaInfo = new FileDownloadHelper.MovieInfo(
+                        title, getItemResult.file);
                 break;
             case ListType.ItemsAll.TYPE_MUSIC_VIDEO:
                 switchToPanel(R.id.media_panel);
@@ -706,6 +807,9 @@ public class NowPlayingFragment extends Fragment
                 rating = 0;
                 maxRating = null;
                 votes = null;
+
+                mediaInfo = new FileDownloadHelper.MovieInfo(
+                        title, getItemResult.file);
                 break;
             case ListType.ItemsAll.TYPE_CHANNEL:
                 switchToPanel(R.id.media_panel);
@@ -721,6 +825,9 @@ public class NowPlayingFragment extends Fragment
                 rating = getItemResult.rating;
                 maxRating = null;
                 votes = null;
+
+                mediaInfo = new FileDownloadHelper.MovieInfo(
+                        title, getItemResult.file);
                 break;
             default:
                 // Other type, just present basic info
@@ -737,6 +844,9 @@ public class NowPlayingFragment extends Fragment
                 rating = 0;
                 maxRating = null;
                 votes = null;
+
+                mediaInfo = new FileDownloadHelper.MovieInfo(
+                        title, getItemResult.file);
                 break;
         }
 
@@ -826,6 +936,9 @@ public class NowPlayingFragment extends Fragment
                     mediaPoster, posterWidth, posterHeight);
             UIUtils.loadImageIntoImageview(hostManager, art, mediaArt, displayMetrics.widthPixels, artHeight);
 
+            //load currently playing, art image
+            SharedPreferenceManager.getInstance(getActivity()).setKeyCurrentStreamArt(art);
+
             // Reset padding
             int paddingLeft = resources.getDimensionPixelOffset(R.dimen.poster_width_plus_padding),
                     paddingRight = mediaTitle.getPaddingRight(),
@@ -837,6 +950,10 @@ public class NowPlayingFragment extends Fragment
             // No fanart, just present the poster
             mediaPoster.setVisibility(View.GONE);
             UIUtils.loadImageWithCharacterAvatar(getActivity(), hostManager, poster, title, mediaArt, artWidth, artHeight);
+
+            //load currently playing art image
+            SharedPreferenceManager.getInstance(getActivity()).setKeyCurrentStreamArt(art);
+
             // Reset padding
             int paddingLeft = mediaTitle.getPaddingRight(),
                     paddingRight = mediaTitle.getPaddingRight(),
@@ -918,7 +1035,8 @@ public class NowPlayingFragment extends Fragment
     }
 
     private int mediaTotalTime = 0,
-            mediaCurrentTime = 0; // s
+            mediaCurrentTime = 0,
+            mediaCurrentlyPlayingType = -1; // s
     private static final int SEEK_BAR_UPDATE_INTERVAL = 1000; // ms
 
     /**

@@ -31,6 +31,7 @@ import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
 import android.support.v4.widget.SwipeRefreshLayout;
+import android.support.v7.app.AppCompatDialog;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.view.LayoutInflater;
@@ -690,28 +691,44 @@ public class MovieDetailsFragment extends AbstractDetailsFragment
         sharedPreferenceManager.setKeyCurrentStreamTagline(mediaUndertitle.getText().toString());
         sharedPreferenceManager.setKeyCurrentStreamUrl(mediaUrl);
         sharedPreferenceManager.setKeyCurrentStreamArt(movieFanArt);
+        sharedPreferenceManager.setKeyCurrentPlaybackPosition(0);
 
-        PlaylistType.Item item = new PlaylistType.Item();
-        item.movieid = movieId;
-        Player.Open action = new Player.Open(item);
+        new AlertDialog.Builder(getActivity())
+                .setTitle("Choose Stream Method")
+                .setMessage("Please select how you would like your media stream played")
+                .setPositiveButton("Mobile Only", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int whichButton) {
+                        Intent intent = new Intent(getActivity(), DeviceOnlyFullScreenVideoPlayerActivity.class);
+                        startActivity(intent);
+                    }
+                })
+                .setNegativeButton("Computer and Mobile", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        PlaylistType.Item item = new PlaylistType.Item();
+                        item.movieid = movieId;
+                        Player.Open action = new Player.Open(item);
 
-        Toast.makeText(getActivity(), "Attempting video sync", Toast.LENGTH_SHORT).show();
-        action.execute(getHostManager().getConnection(), new ApiCallback<String>() {
-            @Override
-            public void onSuccess(String result) {
-                if (!isAdded()) return;
+                        Toast.makeText(getActivity(), "Attempting video sync", Toast.LENGTH_SHORT).show();
+                        action.execute(getHostManager().getConnection(), new ApiCallback<String>() {
+                            @Override
+                            public void onSuccess(String result) {
+                                if (!isAdded()) return;
 
-                Intent intent = new Intent(getActivity(), FullScreenVideoPlayerActivity.class);
-                startActivity(intent);
-            }
+                                Intent intent = new Intent(getActivity(), FullScreenVideoPlayerActivity.class);
+                                startActivity(intent);
+                            }
 
-            @Override
-            public void onError(int errorCode, String description) {
-                if (!isAdded()) return;
-                // Got an error, show toast
-                Toast.makeText(getActivity(), R.string.unable_to_connect_to_xbmc, Toast.LENGTH_SHORT).show();
-            }
-        }, callbackHandler);
+                            @Override
+                            public void onError(int errorCode, String description) {
+                                if (!isAdded()) return;
+                                // Got an error, show toast
+                                Toast.makeText(getActivity(), R.string.unable_to_connect_to_xbmc, Toast.LENGTH_SHORT).show();
+                            }
+                        }, callbackHandler);
+                    }
+                })
+                .show();
     }
 
     /**
