@@ -360,8 +360,7 @@ public class NowPlayingFragment extends Fragment
         int minutes = (mediaCurrentTime % 3600) / 60;
         int seconds = (mediaCurrentTime % 3600) % 60;
 
-        int currentTimeStream = hours * 3600 + minutes * 60 + seconds;
-        sharedPreferenceManager.setKeyCurrentPlaybackPosition(currentTimeStream);
+        sharedPreferenceManager.setKeyCurrentPlaybackPosition(mediaCurrentTime * 1000);
 
         switch (mediaCurrentlyPlayingType) {
             case 0: //Audio type playing

@@ -45,6 +45,7 @@ public class DeviceOnlyVideoPlayerActivity extends Activity implements PlaylistL
     private SharedPreferenceManager sharedPreferenceManager;
 
     protected EMVideoView emVideoView;
+    protected SeekBar emVideoSeekBar;
     protected PlaylistManager playlistManager;
 
     protected int selectedIndex;
@@ -140,6 +141,26 @@ public class DeviceOnlyVideoPlayerActivity extends Activity implements PlaylistL
         setupPlaylistManager();
         emVideoView = (EMVideoView)findViewById(R.id.video_play_activity_video_view);
         playlistManager.setVideoPlayer(new VideoApi(emVideoView));
+        emVideoSeekBar = (SeekBar) emVideoView.findViewById(R.id.exomedia_controls_video_seek);
+
+//        emVideoSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+//            @Override
+//            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+//                if (!fromUser) {
+//                    //seekPosition = progress;
+//                }
+//            }
+//
+//            @Override
+//            public void onStartTrackingTouch(SeekBar seekBar) {
+//                //nothing
+//            }
+//
+//            @Override
+//            public void onStopTrackingTouch(SeekBar seekBar) {
+//                //nothing
+//            }
+//        });
     }
 
     /**
@@ -163,11 +184,9 @@ public class DeviceOnlyVideoPlayerActivity extends Activity implements PlaylistL
         playlistManager.setAllowedMediaType(BasePlaylistManager.AUDIO | BasePlaylistManager.VIDEO);
         playlistManager.setParameters(mediaItems, selectedIndex);
         playlistManager.setId(PLAYLIST_ID);
-        playlistManager.play(0, false);
+        playlistManager.play(seekPosition, false);
 
-        if(playlistManager.getVideoPlayer() != null) {
-            playlistManager.getVideoPlayer().seekTo(seekPosition);
-        }
+        //playlistManager.invokeSeekEnded(seekPosition);
 
     }
 }
