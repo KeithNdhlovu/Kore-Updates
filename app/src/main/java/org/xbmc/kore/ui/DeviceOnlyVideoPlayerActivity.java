@@ -143,24 +143,24 @@ public class DeviceOnlyVideoPlayerActivity extends Activity implements PlaylistL
         playlistManager.setVideoPlayer(new VideoApi(emVideoView));
         emVideoSeekBar = (SeekBar) emVideoView.findViewById(R.id.exomedia_controls_video_seek);
 
-//        emVideoSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-//            @Override
-//            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-//                if (!fromUser) {
-//                    //seekPosition = progress;
-//                }
-//            }
-//
-//            @Override
-//            public void onStartTrackingTouch(SeekBar seekBar) {
-//                //nothing
-//            }
-//
-//            @Override
-//            public void onStopTrackingTouch(SeekBar seekBar) {
-//                //nothing
-//            }
-//        });
+        emVideoSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                if (!fromUser) {
+                    seekPosition = progress;
+                }
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+                //nothing
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                //nothing
+            }
+        });
     }
 
     /**
@@ -185,8 +185,6 @@ public class DeviceOnlyVideoPlayerActivity extends Activity implements PlaylistL
         playlistManager.setParameters(mediaItems, selectedIndex);
         playlistManager.setId(PLAYLIST_ID);
         playlistManager.play(seekPosition, false);
-
-        //playlistManager.invokeSeekEnded(seekPosition);
 
     }
 }
